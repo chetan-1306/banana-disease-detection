@@ -8,7 +8,13 @@ FastAPI backend that serves the trained Keras model to the React frontend.
 
 ```
 backend/
-├── main.py               ← FastAPI app
+├── main.py               ← Compatibility entrypoint (uvicorn main:app)
+├── app/                  ← Application package (clean architecture)
+│   ├── main.py           ← FastAPI app factory + routers
+│   ├── api/routes/       ← HTTP routes (request/response boundary)
+│   ├── services/         ← Model + preprocessing (business logic)
+│   ├── schemas/          ← Pydantic response models
+│   └── core/             ← Config + domain errors
 ├── requirements.txt      ← Python dependencies
 ├── models/
 │   └── banana_disease_model.h5   ← place your model here

@@ -1,105 +1,108 @@
 import React, { useEffect, useRef } from 'react';
-import { View, Text, Animated, StyleSheet, Modal } from 'react-native';
-import { COLORS } from '../constants/colors';
+import {
+  View, Text, Modal, Animated, StyleSheet,
+} from 'react-native';
+import { COLORS } from '../constants/theme';
 
 export default function LoadingOverlay({ visible, message = 'Analysing leaf...' }) {
-  const pulse = useRef(new Animated.Value(1)).current;
+  const dot1 = useRef(new Animated.Value(0)).current;
+  const dot2 = useRef(new Animated.Value(0)).current;
+  const dot3 = useRef(new Animated.Value(0)).current;
+  const scale = useRef(new Animated.Value(0.92)).current;
 
   useEffect(() => {
-    if (visible) {
+    if (!visible) return;
+
+    Animated.spring(scale, {
+      toValue: 1, tension: 80, friction: 8, useNativeDriver: true,
+    }).start();
+
+    const animDot = (dot, delay) =>
       Animated.loop(
         Animated.sequence([
-          Animated.timing(pulse, { toValue: 1.15, duration: 800, useNativeDriver: true }),
-          Animated.timing(pulse, { toValue: 1, duration: 800, useNativeDriver: true }),
+          Animated.delay(delay),
+          Animated.timing(dot, { toValue: 1, duration: 400, useNativeDriver: true }),
+          Animated.timing(dot, { toValue: 0, duration: 400, useNativeDriver: true }),
+          Animated.delay(800 - delay),
         ])
       ).start();
-    } else {
-      pulse.setValue(1);
-    }
+
+    animDot(dot1, 0);
+    animDot(dot2, 200);
+    animDot(dot3, 400);
+
+    return () => { dot1.stopAnimation(); dot2.stopAnimation(); dot3.stopAnimation(); };
   }, [visible]);
 
   return (
-    <Modal transparent visible={visible} animationType="fade">
-      <View style={styles.overlay}>
-        <View style={styles.card}>
-          <Animated.View style={[styles.iconCircle, { transform: [{ scale: pulse }] }]}>
-            <Text style={styles.icon}>🍃</Text>
-          </Animated.View>
-          <Text style={styles.title}>Analysing</Text>
-          <Text style={styles.subtitle}>{message}</Text>
-          <View style={styles.dotsRow}>
-            {[0, 1, 2].map((i) => (
-              <AnimatedDot key={i} delay={i * 200} />
+    <Modal transparent visible={visible} animationType="fade" statusBarTranslucent>
+      <View style={styles.backdrop}>
+        <Animated.View style={[styles.card, { transform: [{ scale }] }]}>
+          <View style={styles.iconBox}>
+            <Text style={styles.icon}>🔬</Text>
+          </View>
+          <View style={styles.labelRow}>
+            <Text style={styles.step}>SCANNING</Text>
+          </View>
+          <Text style={styles.message}>{message}</Text>
+          <View style={styles.dots}>
+            {[dot1, dot2, dot3].map((dot, i) => (
+              <Animated.View
+                key={i}
+                style={[styles.dot, {
+                  opacity: dot,
+                  transform: [{ scale: dot.interpolate({ inputRange: [0, 1], outputRange: [0.6, 1] }) }],
+                }]}
+              />
             ))}
           </View>
-        </View>
+        </Animated.View>
       </View>
     </Modal>
   );
 }
 
-function AnimatedDot({ delay }) {
-  const opacity = useRef(new Animated.Value(0.3)).current;
-
-  useEffect(() => {
-    Animated.loop(
-      Animated.sequence([
-        Animated.delay(delay),
-        Animated.timing(opacity, { toValue: 1, duration: 500, useNativeDriver: true }),
-        Animated.timing(opacity, { toValue: 0.3, duration: 500, useNativeDriver: true }),
-      ])
-    ).start();
-  }, []);
-
-  return <Animated.View style={[styles.dot, { opacity }]} />;
-}
-
 const styles = StyleSheet.create({
-  overlay: {
+  backdrop: {
     flex: 1,
-    backgroundColor: COLORS.overlay,
+    backgroundColor: 'rgba(17,17,17,0.75)',
     alignItems: 'center',
     justifyContent: 'center',
   },
   card: {
     backgroundColor: COLORS.white,
-    borderRadius: 20,
+    borderRadius: 24,
     padding: 32,
+    width: 240,
     alignItems: 'center',
-    width: 220,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.15,
-    shadowRadius: 20,
-    elevation: 10,
+    gap: 10,
   },
-  iconCircle: {
-    width: 64,
-    height: 64,
-    backgroundColor: COLORS.backgroundMuted,
-    borderRadius: 32,
+  iconBox: {
+    width: 64, height: 64,
+    backgroundColor: COLORS.black,
+    borderRadius: 16,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 16,
+    marginBottom: 4,
   },
   icon: { fontSize: 28 },
-  title: {
-    fontFamily: 'serif',
-    fontSize: 20,
-    color: COLORS.primary,
-    fontWeight: '600',
-    marginBottom: 6,
+  labelRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  step: {
+    fontSize: 11,
+    fontWeight: '800',
+    letterSpacing: 0.2,
+    color: COLORS.black,
   },
-  subtitle: {
+  message: {
     fontSize: 13,
     color: COLORS.textMuted,
-    marginBottom: 16,
+    textAlign: 'center',
+    lineHeight: 18,
   },
-  dotsRow: { flexDirection: 'row', gap: 6 },
+  dots: { flexDirection: 'row', gap: 6, marginTop: 4 },
   dot: {
-    width: 8,
-    height: 8,
+    width: 8, height: 8,
     borderRadius: 4,
-    backgroundColor: COLORS.primary,
+    backgroundColor: COLORS.accent,
   },
 });
